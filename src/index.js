@@ -44,8 +44,8 @@ function checkOptions(selectedOption) {
 function downloadFile() {
     inquirer.prompt({
         type: 'list',
-        name: 'beverage',
-        message: 'And your favorite beverage?',
+        name: 'fileType',
+        message: 'Please, what type of file are u going to download?',
         choices: fileType
     });
 }
