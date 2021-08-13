@@ -1,0 +1,23 @@
+{
+  "name": "nuwe-file",
+  "version": "1.0.0",
+  "description": "Week 4 Project, nested promises",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlbertoLinde/Nuwe-Nested-Promises.git"
+  },
+  "author": "Alberto Linde",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlbertoLinde/Nuwe-Nested-Promises/issues"
+  },
+  "homepage": "https://github.com/AlbertoLinde/Nuwe-Nested-Promises#readme",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "inquirer": "^8.1.2"
+  }
+}
