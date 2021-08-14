@@ -1,5 +1,9 @@
 #! /usr/bin/env node
+
 const inquirer = require('inquirer');
+
+const https = require('https');
+const fs = require('fs');
 
 const CLI_OPTIONS = {
     LoginWithGoogle: 'Login with Google',
@@ -28,7 +32,7 @@ function checkOptions(selectedOption) {
 
             break;
         case CLI_OPTIONS.DownloadFile:
-            downloadFile();
+            dowloadFile();
             break;
         case CLI_OPTIONS.DownloadCSV:
 
@@ -41,13 +45,55 @@ function checkOptions(selectedOption) {
     }
 }
 
-function downloadFile() {
-    inquirer.prompt({
-        type: 'list',
-        name: 'fileType',
-        message: 'Please, what type of file are u going to download?',
-        choices: fileType
+function dowloadFile() {
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'fileType',
+            message: 'Please, what type of file are u going to download?',
+            choices: fileType
+        },
+        {
+            type: 'input',
+            name: 'fileName',
+            message: 'Write the name of your file: '
+        },
+        {
+            type: 'input',
+            name: 'fileUrl',
+            message: 'Write the URL to download (locally) your file: '
+        }
+    ]).then(answers => {
+
+        const downloadFileUrl = answers.fileUrl;
+        const path = `../${answers.fileName}.${answers.fileType.toLowerCase()}`;
+        const filePath = fs.createWriteStream(path);
+
+        getFile(downloadFileUrl, filePath)
+            .then(function (resp) {
+                if (resp.statusCode === 200) {
+                    saveFile(resp, filePath);
+                } else {
+                    console.log(`ERROR - Please check the URL\nCODE: ${resp.statusCode}\nMESSAGE: ${resp.statusMessage}`)
+                }
+            }).catch((error) => {
+                filePath.on('error', () => console.log('ERROR: '.concat(error)));
+            });
     });
 }
 
+function getFile(downloadFileUrl) {
+    return new Promise((resolve) => {
+        https.get(downloadFileUrl, (resp, error) => {
+            resolve(resp);
+        });
+    });
+}
 
+function saveFile(resp, filePath) {
+    resp.pipe(filePath);
+    filePath.on('finish', () => {
+        filePath.close();
+        console.log(`File downloaded successfully in: ${JSON.stringify(filePath.path)}.`)
+    });
+}
