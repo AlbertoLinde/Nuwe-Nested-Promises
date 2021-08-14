@@ -1,13 +1,16 @@
 #! /usr/bin/env node
 
 const inquirer = require('inquirer');
+const csv = require('csvtojson')
 
 const https = require('https');
 const fs = require('fs');
 
+
 const CLI_OPTIONS = {
     LoginWithGoogle: 'Login with Google',
     DownloadFile: 'Download File ⬇',
+    ConvertJSONLocal: 'CSV to JSON (Local File)',
     DownloadCSV: 'Download CSV and convert to JSON',
     DownloadGDrive: 'Download file from Google Drive'
 };
@@ -20,7 +23,7 @@ inquirer
             type: 'list',
             name: 'options',
             message: 'What do you need?',
-            choices: ['Login with Google', 'Download File ⬇', 'Download CSV and convert to JSON', 'Download file from Google Drive']
+            choices: ['Login with Google', 'Download File ⬇', 'CSV to JSON (Local File)', 'Download CSV and convert to JSON', 'Download file from Google Drive']
         }
     ]).then(answers => {
         checkOptions(answers.options);
@@ -32,10 +35,13 @@ function checkOptions(selectedOption) {
 
             break;
         case CLI_OPTIONS.DownloadFile:
-            dowloadFile();
+            taskTwo();
+            break;
+        case CLI_OPTIONS.ConvertJSONLocal:
+            taskThree();
             break;
         case CLI_OPTIONS.DownloadCSV:
-
+            taskFour();
             break;
         case CLI_OPTIONS.DownloadGDrive:
 
@@ -45,25 +51,19 @@ function checkOptions(selectedOption) {
     }
 }
 
-function dowloadFile() {
-    inquirer.prompt([
-        {
-            type: 'list',
-            name: 'fileType',
-            message: 'Please, what type of file are u going to download?',
-            choices: fileType
-        },
-        {
-            type: 'input',
-            name: 'fileName',
-            message: 'Write the name of your file: '
-        },
-        {
-            type: 'input',
-            name: 'fileUrl',
-            message: 'Write the URL to download (locally) your file: '
-        }
-    ]).then(answers => {
+
+/**
+ * Download files CVS/TXT/JSON.
+ */
+function taskTwo() {
+
+    const DOWNLOAD_QUESTION = [
+        { type: 'list', name: 'fileType', message: 'Please, what type of file are u going to download?', choices: fileType },
+        { type: 'input', name: 'fileName', message: 'Write the name of your file: ' },
+        { type: 'input', name: 'fileUrl', message: 'Write the URL to download (locally) your file: ' }
+    ];
+
+    inquirer.prompt(DOWNLOAD_QUESTION).then(answers => {
 
         const downloadFileUrl = answers.fileUrl;
         const path = `../${answers.fileName}.${answers.fileType.toLowerCase()}`;
@@ -96,4 +96,72 @@ function saveFile(resp, filePath) {
         filePath.close();
         console.log(`File downloaded successfully in: ${JSON.stringify(filePath.path)}.`)
     });
+    return JSON.stringify(filePath.path);
 }
+
+// TASK 3 - CONVERT CSV TO JSON (LOCAL - NO DOWNLOAD)
+function taskThree() {
+
+    const CSVTOJSON_QUESTIONS = [
+        { type: 'input', name: 'localPath', message: 'Please, insert the path of your CSV file: ' },
+        { type: 'input', name: 'fileName', message: 'Write the name of the JSON to be generated: ' }];
+
+    inquirer
+        .prompt(CSVTOJSON_QUESTIONS).then(answers => {
+            toJson(answers.localPath, answers);
+        });
+}
+
+
+function taskFour() {
+
+    const CSVTOJSON_QUESTIONS = [
+        { type: 'input', name: 'fileName', message: 'Write the name of your file: ' },
+        { type: 'input', name: 'fileUrl', message: 'Write the URL to download (locally) your file: ' }];
+
+    inquirer
+        .prompt(CSVTOJSON_QUESTIONS)
+        .then(answers => {
+
+            const downloadFileUrl = answers.fileUrl;
+            const path = `../${answers.fileName}.csv`;
+            const filePath = fs.createWriteStream(path);
+
+            getFile(downloadFileUrl, filePath)
+                .then(function (resp) {
+                    if (resp.statusCode === 200) {
+                        convertCsvToJson(resp, filePath, answers);
+                    }
+                });
+        });
+}
+/**
+ * Pipe the resp stream and when finish the operation convert the CSV to JSON.
+ */
+function convertCsvToJson(resp, filePath, answers) {
+    resp.pipe(filePath);
+    filePath.on('finish', () => {
+        filePath.close();
+        console.log(`File downloaded successfully in: ${JSON.stringify(filePath.path)}.`)
+        toJson(filePath.path, answers);
+    });
+}
+
+/**
+ * Convert the downloaded or local CSV file into JSON.
+ * @param { String } csvFile 
+ * @param { Object } answers 
+ */
+function toJson(csvFile, answers) {
+    csv()
+        .fromFile(csvFile)
+        .then((jsonValue) => {
+            fs.writeFileSync(`${answers.fileName}.json`, JSON.stringify(jsonValue), "utf8", (error) => {
+                if (error) { console.log(error); }
+            });
+        })
+        .then(`File converted to JSON: ${JSON.stringify(csvFile.path)}.`);
+}
+
+
+
