@@ -56,7 +56,7 @@ function checkOptions(selectedOption) {
  */
 async function taskOne() {
     const authInfo = await gdrive.checkAuth();
-    if (authInfo) { console.log(authInfo.data.user); }
+    if (authInfo) { console.log(authInfo.data.user.displayName); }
 }
 
 
